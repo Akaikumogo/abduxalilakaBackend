@@ -1,0 +1,12 @@
+# NestJS
+dist
+lib
+node_modules
+coverage
+*.log
+*.test.log
+*.js.map
+*.d.ts
+*.d.ts.map
+*.js.map
+.env
