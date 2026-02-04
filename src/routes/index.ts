@@ -13,6 +13,7 @@ import testimonialsRoutes from './testimonials.js';
 import tipsRoutes from './tips.js';
 import faqRoutes from './faq.js';
 import contactRoutes from './contact.js';
+import aboutRoutes from './about.js';
 
 const router = Router();
 
@@ -30,6 +31,7 @@ router.use('/testimonials', testimonialsRoutes);
 router.use('/tips', tipsRoutes);
 router.use('/faq', faqRoutes);
 router.use('/contact', contactRoutes);
+router.use('/about', aboutRoutes);
 
 // Health check
 router.get('/health', (req, res) => {
