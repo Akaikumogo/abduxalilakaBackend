@@ -1,4 +1,6 @@
 import { Request, Response } from 'express';
+import fs from 'fs';
+import path from 'path';
 import { getSetting, setSetting } from '../models/index.js';
  
 export interface AboutSettings {
@@ -10,6 +12,12 @@ export interface AboutSettings {
   text2En: string;
   buttonTextUz: string;
   buttonTextEn: string;
+}
+
+export interface AboutImageItem {
+  id: string;
+  imageUrl: string;
+  order: number;
 }
  
 const DEFAULT_ABOUT: AboutSettings = {
@@ -26,6 +34,8 @@ const DEFAULT_ABOUT: AboutSettings = {
   buttonTextUz: 'Batafsil',
   buttonTextEn: 'Learn more',
 };
+
+const DEFAULT_ABOUT_IMAGES: AboutImageItem[] = [];
  
 // Public endpoint
 export async function getAboutSettings(req: Request, res: Response): Promise<void> {
@@ -76,6 +86,93 @@ export async function updateAboutSettings(req: Request, res: Response): Promise<
     res.json({ success: true, data: settings });
   } catch (error) {
     console.error('UpdateAboutSettings error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+}
+
+// Public: get about slider images
+export async function getAboutImages(req: Request, res: Response): Promise<void> {
+  try {
+    const images = await getSetting<AboutImageItem[]>('aboutImages', DEFAULT_ABOUT_IMAGES);
+    const sorted = [...images].sort((a, b) => (a.order || 0) - (b.order || 0));
+    res.json({ success: true, data: sorted });
+  } catch (error) {
+    console.error('GetAboutImages error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+}
+
+// Admin: get about slider images
+export async function getAboutImagesAdmin(req: Request, res: Response): Promise<void> {
+  try {
+    const images = await getSetting<AboutImageItem[]>('aboutImages', DEFAULT_ABOUT_IMAGES);
+    const sorted = [...images].sort((a, b) => (a.order || 0) - (b.order || 0));
+    res.json({ success: true, data: sorted });
+  } catch (error) {
+    console.error('GetAboutImagesAdmin error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+}
+
+// Admin: upload new about slider image
+export async function uploadAboutImage(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.file) {
+      res.status(400).json({ success: false, error: 'No image file provided' });
+      return;
+    }
+
+    const imageUrl = `/uploads/${req.file.filename}`;
+    const images = await getSetting<AboutImageItem[]>('aboutImages', DEFAULT_ABOUT_IMAGES);
+
+    const newItem: AboutImageItem = {
+      id: `aboutimg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      imageUrl,
+      order: images.length + 1,
+    };
+
+    images.push(newItem);
+    await setSetting('aboutImages', images);
+
+    res.json({ success: true, data: newItem });
+  } catch (error) {
+    console.error('UploadAboutImage error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+}
+
+// Admin: delete about slider image
+export async function deleteAboutImage(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const images = await getSetting<AboutImageItem[]>('aboutImages', DEFAULT_ABOUT_IMAGES);
+    const existing = images.find((img) => img.id === id);
+
+    if (!existing) {
+      res.status(404).json({ success: false, error: 'Image not found' });
+      return;
+    }
+
+    // Delete physical file if it is inside /uploads
+    if (existing.imageUrl && existing.imageUrl.startsWith('/uploads/')) {
+      const relativePath = existing.imageUrl.replace(/^\//, '');
+      const filePath = path.join(process.cwd(), relativePath);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    const filtered = images.filter((img) => img.id !== id);
+    const reordered = filtered.map((img, index) => ({
+      ...img,
+      order: index + 1,
+    }));
+
+    await setSetting('aboutImages', reordered);
+
+    res.json({ success: true, message: 'Image deleted' });
+  } catch (error) {
+    console.error('DeleteAboutImage error:', error);
     res.status(500).json({ success: false, error: 'Server error' });
   }
 }

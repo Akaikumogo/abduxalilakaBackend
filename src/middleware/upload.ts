@@ -46,7 +46,7 @@ export const uploadHero = multer({
   storage: heroStorage,
   fileFilter: imageFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max
+    fileSize: 50 * 1024 * 1024, // 50MB max
   },
 });
 
@@ -65,6 +65,6 @@ export const upload = multer({
   storage: genericStorage,
   fileFilter: imageFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB max
+    fileSize: 50 * 1024 * 1024, // 50MB max
   },
 });
